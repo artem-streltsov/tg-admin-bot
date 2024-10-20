@@ -98,6 +98,10 @@ func main() {
 
 				msg := tgbotapi.NewMessage(chatID, response.String())
 				bot.Send(msg)
+			case text == "/answer":
+				userStates[chatID] = "awaiting_question_id"
+				msg := tgbotapi.NewMessage(chatID, "Пожалуйста, укажите ID вопроса, на который хотите ответить.")
+				bot.Send(msg)
 			}
 		} else {
 			switch text {
