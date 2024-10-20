@@ -65,12 +65,16 @@ func main() {
 
 		chatID := update.Message.Chat.ID
 		isAdmin := chatID == adminID
+		text := update.Message.Text
 		var msg tgbotapi.MessageConfig
 
 		if isAdmin {
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Вы администратор")
 		} else {
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Вы пользователь")
+			switch text {
+			case "/start":
+				msg = tgbotapi.NewMessage(chatID, "Здравствуйте! Используйте /contact, чтобы связаться с администратором.")
+			}
 		}
 
 		if _, err := bot.Send(msg); err != nil {
