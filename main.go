@@ -123,6 +123,34 @@ func main() {
 				userStates[chatID] = fmt.Sprintf("answering_%d", questionID)
 				msg := tgbotapi.NewMessage(chatID, "Пожалуйста, введите сообщение для отправки пользователю.")
 				bot.Send(msg)
+			case strings.HasPrefix(userStates[chatID], "answering_"):
+				parts := strings.Split(userStates[chatID], "_")
+				questionID, _ := strconv.Atoi(parts[1])
+
+				var userID int64
+				err := db.QueryRow("SELECT user_id FROM messages WHERE id = ?", questionID).Scan(&userID)
+				if err != nil {
+					msg := tgbotapi.NewMessage(chatID, "Ошибка при получении информации о пользователе.")
+					bot.Send(msg)
+					userStates[chatID] = ""
+					continue
+				}
+
+				responseMsg := tgbotapi.NewMessage(userID, "Ответ администратора:\n"+text)
+				if _, err := bot.Send(responseMsg); err != nil {
+					log.Printf("Ошибка отправки сообщения пользователю: %v", err)
+					msg := tgbotapi.NewMessage(chatID, "Ошибка при отправке сообщения пользователю.")
+					bot.Send(msg)
+				} else {
+					_, err := db.Exec("UPDATE messages SET answered = 1 WHERE id = ?", questionID)
+					if err != nil {
+						log.Printf("Ошибка обновления статуса сообщения: %v", err)
+					}
+					msg := tgbotapi.NewMessage(chatID, "Сообщение отправлено пользователю.")
+					bot.Send(msg)
+				}
+
+				userStates[chatID] = ""
 			}
 		} else {
 			switch text {
