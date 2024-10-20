@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
@@ -71,8 +72,33 @@ func main() {
 		text := update.Message.Text
 
 		if isAdmin {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Вы администратор")
-			bot.Send(msg)
+			switch {
+			case text == "/see_queries":
+				rows, err := db.Query("SELECT id, username, message FROM messages WHERE answered = 0")
+				if err != nil {
+					log.Printf("Ошибка чтения сообщений: %v", err)
+					continue
+				}
+				defer rows.Close()
+
+				var response strings.Builder
+				for rows.Next() {
+					var id int
+					var username, message string
+					if err := rows.Scan(&id, &username, &message); err != nil {
+						log.Printf("Ошибка сканирования сообщения: %v", err)
+						continue
+					}
+					response.WriteString(fmt.Sprintf("ID: %d\nПользователь: %s\nСообщение: %s\n\n", id, username, message))
+				}
+
+				if response.Len() == 0 {
+					response.WriteString("Нет новых вопросов.")
+				}
+
+				msg := tgbotapi.NewMessage(chatID, response.String())
+				bot.Send(msg)
+			}
 		} else {
 			switch text {
 			case "/contact":
