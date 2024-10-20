@@ -1,1 +1,1 @@
-ALTER TABLE messages ADD COLUMN answer TEXT;
+ALTER TABLE messages ADD COLUMN answer TEXT DEFAULT "";
