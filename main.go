@@ -136,12 +136,18 @@ func main() {
 				userStates[chatID] = "awaiting_question_id"
 				msg := tgbotapi.NewMessage(chatID, "Пожалуйста, укажите ID вопроса, на который хотите ответить.")
 				bot.Send(msg)
-			case userStates[chatID] == "awaiting_question_id":
-				questionID, err := strconv.Atoi(text)
-				if err != nil {
-					msg := tgbotapi.NewMessage(chatID, "Пожалуйста, введите корректный числовой ID.")
-					bot.Send(msg)
-					continue
+			case userStates[chatID] == "awaiting_question_id" || strings.HasPrefix(text, "/answer_"):
+				var questionID int
+				if strings.HasPrefix(text, "/answer_") {
+					parts := strings.Split(text, "_")
+					questionID, _ = strconv.Atoi(parts[1])
+				} else {
+					questionID, err = strconv.Atoi(text)
+					if err != nil {
+						msg := tgbotapi.NewMessage(chatID, "Пожалуйста, введите корректный числовой ID.")
+						bot.Send(msg)
+						continue
+					}
 				}
 
 				var userID int64
@@ -228,7 +234,7 @@ func main() {
 				bot.Send(msg)
 			default:
 				if userStates[chatID] == "awaiting_message" {
-					_, err := db.Exec(
+					result, err := db.Exec(
 						"INSERT INTO messages (user_id, username, message) VALUES (?, ?, ?)",
 						chatID, update.Message.From.UserName, text,
 					)
@@ -239,7 +245,15 @@ func main() {
 						continue
 					}
 
-					adminMsg := tgbotapi.NewMessage(adminID, fmt.Sprintf("Новый вопрос\nОт:@%s\nСообщение:%s\nОтветить: /answer", update.Message.From.UserName, text))
+					id, err := result.LastInsertId()
+					if err != nil {
+						log.Printf("Ошибка получения ID сообщения: %v", err)
+						msg := tgbotapi.NewMessage(chatID, "Ошибка при обработке вашего сообщения.")
+						bot.Send(msg)
+						continue
+					}
+
+					adminMsg := tgbotapi.NewMessage(adminID, fmt.Sprintf("Новый вопрос\nОт:@%s\nСообщение:%s\nОтветить: /answer_%d", update.Message.From.UserName, text, id))
 					bot.Send(adminMsg)
 
 					msg := tgbotapi.NewMessage(chatID, "Ваше сообщение отправлено администратору.")
