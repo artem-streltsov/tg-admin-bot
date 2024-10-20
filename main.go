@@ -58,6 +58,8 @@ func main() {
 	updateConfig.Timeout = 60
 	updates := bot.GetUpdatesChan(updateConfig)
 
+	userStates := make(map[int64]string)
+
 	for update := range updates {
 		if update.Message == nil {
 			continue
@@ -72,6 +74,9 @@ func main() {
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Вы администратор")
 		} else {
 			switch text {
+			case "/contact":
+				userStates[chatID] = "awaiting_message"
+				msg = tgbotapi.NewMessage(chatID, "Напишите мне сообщение, которое нужно отправить администратору.")
 			case "/start":
 				msg = tgbotapi.NewMessage(chatID, "Здравствуйте! Используйте /contact, чтобы связаться с администратором.")
 			}
