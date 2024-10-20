@@ -73,6 +73,9 @@ func main() {
 
 		if isAdmin {
 			switch {
+			case text == "/start":
+				msg := tgbotapi.NewMessage(chatID, "Добро пожаловать, Вы - администратор. Используйте команды /see_queries и /answer для ответа на вопросы пользователей.")
+				bot.Send(msg)
 			case text == "/see_queries":
 				rows, err := db.Query("SELECT id, username, message FROM messages WHERE answered = 0")
 				if err != nil {
