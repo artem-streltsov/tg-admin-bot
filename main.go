@@ -195,12 +195,36 @@ func main() {
 			}
 		} else {
 			switch text {
+			case "/start":
+				msg := tgbotapi.NewMessage(chatID, "Здравствуйте! Используйте /contact, чтобы связаться с администратором.")
+				bot.Send(msg)
 			case "/contact":
 				userStates[chatID] = "awaiting_message"
 				msg := tgbotapi.NewMessage(chatID, "Напишите мне сообщение, которое нужно отправить администратору.")
 				bot.Send(msg)
-			case "/start":
-				msg := tgbotapi.NewMessage(chatID, "Здравствуйте! Используйте /contact, чтобы связаться с администратором.")
+			case "/see_questions":
+				rows, err := db.Query("SELECT message, answer FROM messages WHERE username=?", update.Message.From.UserName)
+				if err != nil {
+					log.Printf("Ошибка чтения сообщений: %v", err)
+					continue
+				}
+				defer rows.Close()
+
+				var response strings.Builder
+				for rows.Next() {
+					var message, answer string
+					if err := rows.Scan(&message, &answer); err != nil {
+						log.Printf("Ошибка сканирования сообщения: %v", err)
+						continue
+					}
+					response.WriteString(fmt.Sprintf("Вопрос: %s\nОтвет: %s\n\n", message, answer))
+				}
+
+				if response.Len() == 0 {
+					response.WriteString("У Вас нет вопросов.")
+				}
+
+				msg := tgbotapi.NewMessage(chatID, response.String())
 				bot.Send(msg)
 			default:
 				if userStates[chatID] == "awaiting_message" {
