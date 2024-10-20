@@ -80,7 +80,7 @@ func main() {
 		if isAdmin {
 			switch {
 			case text == "/start":
-				msg := tgbotapi.NewMessage(chatID, "Добро пожаловать, Вы - администратор. Используйте команды /see_queries и /answer для ответа на вопросы пользователей.")
+				msg := tgbotapi.NewMessage(chatID, "Добро пожаловать, Вы - администратор. Используйте команды /see_queries и /answer для ответа на вопросы пользователей и /see_answered чтобы посмотреть Ваши ответы.")
 				bot.Send(msg)
 			case text == "/see_queries":
 				rows, err := db.Query("SELECT id, username, message FROM messages WHERE answered = 0")
@@ -103,6 +103,31 @@ func main() {
 
 				if response.Len() == 0 {
 					response.WriteString("Нет новых вопросов.")
+				}
+
+				msg := tgbotapi.NewMessage(chatID, response.String())
+				bot.Send(msg)
+			case text == "/see_answered":
+				rows, err := db.Query("SELECT id, username, message, answer FROM messages WHERE answered = 1")
+				if err != nil {
+					log.Printf("Ошибка чтения сообщений: %v", err)
+					continue
+				}
+				defer rows.Close()
+
+				var response strings.Builder
+				for rows.Next() {
+					var id int
+					var username, message, answer string
+					if err := rows.Scan(&id, &username, &message, &answer); err != nil {
+						log.Printf("Ошибка сканирования сообщения: %v", err)
+						continue
+					}
+					response.WriteString(fmt.Sprintf("ID: %d\nПользователь: %s\nСообщение: %s\nОтвет: %s\n", id, username, message, answer))
+				}
+
+				if response.Len() == 0 {
+					response.WriteString("Нет отвеченных вопросов.")
 				}
 
 				msg := tgbotapi.NewMessage(chatID, response.String())
@@ -135,9 +160,13 @@ func main() {
 			case strings.HasPrefix(userStates[chatID], "answering_"):
 				parts := strings.Split(userStates[chatID], "_")
 				questionID, _ := strconv.Atoi(parts[1])
+				answer := text
+
+				db.Exec("UPDATE messages SET answer=? WHERE id=?", answer, questionID)
 
 				var userID int64
-				err := db.QueryRow("SELECT user_id FROM messages WHERE id = ?", questionID).Scan(&userID)
+				var question string
+				err := db.QueryRow("SELECT user_id, message FROM messages WHERE id = ?", questionID).Scan(&userID, &question)
 				if err != nil {
 					msg := tgbotapi.NewMessage(chatID, "Ошибка при получении информации о пользователе.")
 					bot.Send(msg)
@@ -145,7 +174,7 @@ func main() {
 					continue
 				}
 
-				responseMsg := tgbotapi.NewMessage(userID, "Ответ администратора:\n"+text)
+				responseMsg := tgbotapi.NewMessage(userID, fmt.Sprintf("Ваш вопрос: %v\nОтвет администратора:%v\n", question, answer))
 				if _, err := bot.Send(responseMsg); err != nil {
 					log.Printf("Ошибка отправки сообщения пользователю: %v", err)
 					msg := tgbotapi.NewMessage(chatID, "Ошибка при отправке сообщения пользователю.")
