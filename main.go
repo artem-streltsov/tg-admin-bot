@@ -1,12 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"os"
 	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -26,6 +28,24 @@ func main() {
 	adminID, err := strconv.ParseInt(adminIDStr, 10, 64)
 	if err != nil {
 		log.Fatalf("ADMIN_CHAT_ID должен быть числом: %v", err)
+	}
+
+	db, err := sql.Open("sqlite3", "./database.db")
+	if err != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	}
+	defer db.Close()
+
+	createTableQuery := `
+    CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        username TEXT,
+        message TEXT,
+        answered INTEGER DEFAULT 0
+    );`
+	if _, err := db.Exec(createTableQuery); err != nil {
+		log.Fatalf("Ошибка создания базы данных: %v", err)
 	}
 
 	bot, err := tgbotapi.NewBotAPI(token)
