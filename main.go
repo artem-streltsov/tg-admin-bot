@@ -10,17 +10,17 @@ import (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Fatalf("Ошибка загрузки файла с перменными среды: %v", err)
 	}
 
 	token := os.Getenv("BOT_TOKEN")
 	if token == "" {
-		log.Fatal("BOT_TOKEN environment variable not set")
+		log.Fatal("Переменная среды BOT_TOKEN не установлена")
 	}
 
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		log.Fatalf("Failed to create bot: %v", err)
+		log.Fatalf("Ошибка инициализации бота: %v", err)
 	}
 
 	bot.Debug = false
@@ -36,7 +36,7 @@ func main() {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 
 		if _, err := bot.Send(msg); err != nil {
-			log.Printf("Failed to send message: %v", err)
+			log.Printf("Ошибка отправки сообщения: %v", err)
 		}
 	}
 }
