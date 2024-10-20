@@ -51,16 +51,16 @@ func main() {
 func handleAdminMessage(bot *tgbotapi.BotAPI, database *db.DB, userStates map[int64]string, chatID int64, text string) {
 	switch {
 	case text == "/start":
-		msg := "Добро пожаловать, Вы - администратор. Вы можете использовать команды:\n/see_queries - посмотреть вопросы\n/answer - ответить на вопрос\n/see_answered - посмотреть Ваши ответы."
+		msg := "Добро пожаловать, Вы - администратор. Вы можете использовать команды:\n/see_questions - посмотреть вопросы\n/answer - ответить на вопрос\n/see_answers - посмотреть Ваши ответы."
 		bot.Send(tgbotapi.NewMessage(chatID, msg))
-	case text == "/see_queries":
+	case text == "/see_questions":
 		messages, err := database.GetPendingMessages()
 		if err != nil {
 			log.Printf("Error reading messages: %v", err)
 			return
 		}
 		sendMessagesList(bot, chatID, messages, "Нет новых вопросов.")
-	case text == "/see_answered":
+	case text == "/see_answers":
 		messages, err := database.GetAnsweredMessages()
 		if err != nil {
 			log.Printf("Error reading messages: %v", err)
@@ -98,11 +98,11 @@ func handleAdminMessage(bot *tgbotapi.BotAPI, database *db.DB, userStates map[in
 			userStates[chatID] = ""
 			return
 		}
-		sendAnswerToUser(bot, msg.UserID, msg.Message, answer)
+		sendAnswerToUser(bot, msg.UserID, msg.Question, answer)
 		bot.Send(tgbotapi.NewMessage(chatID, "Сообщение отправлено пользователю."))
 		userStates[chatID] = ""
 	default:
-		bot.Send(tgbotapi.NewMessage(chatID, "Неизвестная команда.\nДоступные команды:\n/see_queries\n/see_answered\n/answer"))
+		bot.Send(tgbotapi.NewMessage(chatID, "Неизвестная команда.\nДоступные команды:\n/see_questions\n/see_answers\n/answer"))
 	}
 }
 
@@ -150,7 +150,7 @@ func parseQuestionID(text string) (int, error) {
 func sendMessagesList(bot *tgbotapi.BotAPI, chatID int64, messages []db.Message, emptyMsg string) {
 	var response strings.Builder
 	for _, msg := range messages {
-		response.WriteString(fmt.Sprintf("ID: %d\nПользователь: %s\nСообщение: %s\nОтветить: /answer_%d\n", msg.ID, msg.Username, msg.Message, msg.ID))
+		response.WriteString(fmt.Sprintf("ID: %d\nПользователь: %s\nСообщение: %s\nОтветить: /answer_%d\n", msg.ID, msg.Username, msg.Question, msg.ID))
 	}
 	if response.Len() == 0 {
 		response.WriteString(emptyMsg)
@@ -161,7 +161,7 @@ func sendMessagesList(bot *tgbotapi.BotAPI, chatID int64, messages []db.Message,
 func sendAnsweredList(bot *tgbotapi.BotAPI, chatID int64, messages []db.Message, emptyMsg string) {
 	var response strings.Builder
 	for _, msg := range messages {
-		response.WriteString(fmt.Sprintf("ID: %d\nПользователь: %s\nВопрос:\n%s\nОтвет:\n%s\n\n", msg.ID, msg.Username, msg.Message, msg.Answer))
+		response.WriteString(fmt.Sprintf("ID: %d\nПользователь: %s\nВопрос:\n%s\nОтвет:\n%s\n\n", msg.ID, msg.Username, msg.Question, msg.Answer))
 	}
 	if response.Len() == 0 {
 		response.WriteString(emptyMsg)
@@ -173,9 +173,9 @@ func sendUserMessagesList(bot *tgbotapi.BotAPI, chatID int64, messages []db.Mess
 	var response strings.Builder
 	response.WriteString("Ваши вопросы\n\n")
 	for _, msg := range messages {
-		response.WriteString(fmt.Sprintf("Вопрос:\n%s\nОтвет:\n%s\n\n", msg.Message, msg.Answer))
+		response.WriteString(fmt.Sprintf("Вопрос:\n%s\nОтвет:\n%s\n\n", msg.Question, msg.Answer))
 	}
-	if response.Len() == 0 {
+	if len(messages) == 0 {
 		response.WriteString("У Вас нет вопросов.")
 	}
 	bot.Send(tgbotapi.NewMessage(chatID, response.String()))

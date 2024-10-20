@@ -18,7 +18,7 @@ type Message struct {
 	ID       int
 	UserID   int64
 	Username string
-	Message  string
+	Question string
 	Answer   string
 }
 
@@ -50,7 +50,7 @@ func (db *DB) Migrate() {
 }
 
 func (db *DB) GetPendingMessages() ([]Message, error) {
-	rows, err := db.conn.Query("SELECT id, username, message FROM messages WHERE answered = 0")
+	rows, err := db.conn.Query("SELECT id, username, question FROM messages WHERE answered = 0")
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (db *DB) GetPendingMessages() ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var msg Message
-		if err := rows.Scan(&msg.ID, &msg.Username, &msg.Message); err != nil {
+		if err := rows.Scan(&msg.ID, &msg.Username, &msg.Question); err != nil {
 			return nil, err
 		}
 		messages = append(messages, msg)
@@ -68,7 +68,7 @@ func (db *DB) GetPendingMessages() ([]Message, error) {
 }
 
 func (db *DB) GetAnsweredMessages() ([]Message, error) {
-	rows, err := db.conn.Query("SELECT id, username, message, answer FROM messages WHERE answered = 1")
+	rows, err := db.conn.Query("SELECT id, username, question, answer FROM messages WHERE answered = 1")
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (db *DB) GetAnsweredMessages() ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var msg Message
-		if err := rows.Scan(&msg.ID, &msg.Username, &msg.Message, &msg.Answer); err != nil {
+		if err := rows.Scan(&msg.ID, &msg.Username, &msg.Question, &msg.Answer); err != nil {
 			return nil, err
 		}
 		messages = append(messages, msg)
@@ -86,7 +86,7 @@ func (db *DB) GetAnsweredMessages() ([]Message, error) {
 }
 
 func (db *DB) GetUserMessages(username string) ([]Message, error) {
-	rows, err := db.conn.Query("SELECT message, answer FROM messages WHERE username=?", username)
+	rows, err := db.conn.Query("SELECT question, answer FROM messages WHERE username=?", username)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (db *DB) GetUserMessages(username string) ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var msg Message
-		if err := rows.Scan(&msg.Message, &msg.Answer); err != nil {
+		if err := rows.Scan(&msg.Question, &msg.Answer); err != nil {
 			return nil, err
 		}
 		messages = append(messages, msg)
@@ -103,8 +103,8 @@ func (db *DB) GetUserMessages(username string) ([]Message, error) {
 	return messages, nil
 }
 
-func (db *DB) SaveMessage(userID int64, username, message string) (int64, error) {
-	result, err := db.conn.Exec("INSERT INTO messages (user_id, username, message) VALUES (?, ?, ?)", userID, username, message)
+func (db *DB) SaveMessage(userID int64, username, question string) (int64, error) {
+	result, err := db.conn.Exec("INSERT INTO messages (user_id, username, question) VALUES (?, ?, ?)", userID, username, question)
 	if err != nil {
 		return 0, err
 	}
@@ -113,7 +113,7 @@ func (db *DB) SaveMessage(userID int64, username, message string) (int64, error)
 
 func (db *DB) GetMessageByID(questionID int) (Message, error) {
 	var msg Message
-	err := db.conn.QueryRow("SELECT user_id, username, message FROM messages WHERE id = ?", questionID).Scan(&msg.UserID, &msg.Username, &msg.Message)
+	err := db.conn.QueryRow("SELECT user_id, username, question FROM messages WHERE id = ?", questionID).Scan(&msg.UserID, &msg.Username, &msg.Question)
 	return msg, err
 }
 
