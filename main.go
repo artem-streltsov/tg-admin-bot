@@ -215,7 +215,7 @@ func main() {
 						continue
 					}
 
-					adminMsg := tgbotapi.NewMessage(adminID, fmt.Sprintf("Новый вопрос от @%s:\n%s", update.Message.From.UserName, text))
+					adminMsg := tgbotapi.NewMessage(adminID, fmt.Sprintf("Новый вопрос\nОт:@%s\nСообщение:%s\nОтветить: /answer", update.Message.From.UserName, text))
 					bot.Send(adminMsg)
 
 					msg := tgbotapi.NewMessage(chatID, "Ваше сообщение отправлено администратору.")
