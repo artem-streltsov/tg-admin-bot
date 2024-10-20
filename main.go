@@ -102,6 +102,27 @@ func main() {
 				userStates[chatID] = "awaiting_question_id"
 				msg := tgbotapi.NewMessage(chatID, "Пожалуйста, укажите ID вопроса, на который хотите ответить.")
 				bot.Send(msg)
+			case userStates[chatID] == "awaiting_question_id":
+				questionID, err := strconv.Atoi(text)
+				if err != nil {
+					msg := tgbotapi.NewMessage(chatID, "Пожалуйста, введите корректный числовой ID.")
+					bot.Send(msg)
+					continue
+				}
+
+				var userID int64
+				var username, userMessage string
+				err = db.QueryRow("SELECT user_id, username, message FROM messages WHERE id = ? AND answered = 0", questionID).Scan(&userID, &username, &userMessage)
+				if err != nil {
+					msg := tgbotapi.NewMessage(chatID, "Вопрос с таким ID не найден или уже был отвечен.")
+					bot.Send(msg)
+					userStates[chatID] = ""
+					continue
+				}
+
+				userStates[chatID] = fmt.Sprintf("answering_%d", questionID)
+				msg := tgbotapi.NewMessage(chatID, "Пожалуйста, введите сообщение для отправки пользователю.")
+				bot.Send(msg)
 			}
 		} else {
 			switch text {
