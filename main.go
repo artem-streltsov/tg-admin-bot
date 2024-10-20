@@ -151,6 +151,9 @@ func main() {
 				}
 
 				userStates[chatID] = ""
+			default:
+				msg := tgbotapi.NewMessage(chatID, "Неизвестная команда.")
+				bot.Send(msg)
 			}
 		} else {
 			switch text {
